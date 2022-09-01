@@ -30,8 +30,16 @@ def main(config):
 def render_events(special, event, timezone):
 	output = []
 	if special:
+		color = special.get("color")
+		summary = special.get("summary")
+		if summary.rfind("Fellow") >= 0:
+			color = "#0000FF"
+		elif summary.rfind("Ghost") >= 0:
+			color = "#00FF00"
+		elif summary.rfind("Walnut") >= 0:
+			color = "#FF0000"
 		pages = []
-		for word in split_summary(special.get("summary")):
+		for word in split_summary(summary):
 			pages.append(
 				render.Padding(
 					pad = (0, 1, 0, 2),
@@ -42,7 +50,7 @@ def render_events(special, event, timezone):
 					    children = [render.Text(
 					    	content = "∗ " + word + " ∗",
 					    	font = "6x13",
-					    	color = special.get("color"),
+					    	color = color,
 					    ),]
 					)
 				)
