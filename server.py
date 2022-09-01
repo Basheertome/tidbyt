@@ -16,7 +16,11 @@ def main():
 		file = open('../config.json')
 		config = json.load(file)
 		file.close()
-
+	except:
+		file = open('config.json')
+		config = json.load(file)
+		file.close()
+	try:
 		username = config.get("username")
 		timezone = config.get("timezone")
 
@@ -55,6 +59,7 @@ def main():
 			sortedEvents.sort(key=startFilter)
 			output.update({"event": sortedEvents[0]})
 
+		print("done")
 		return jsonify(output)
 	except Exception as e:
 		print(e)
