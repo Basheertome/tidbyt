@@ -48,7 +48,7 @@ def main():
 			for event in process_calendar(calendar.get("url"), today, endDate):
 				if not check_declined(event, username):
 					eventDict = process_event(event, calendar.get("color"))
-					if not eventDict.get("allday") and now <= eventDict.get("end"): 
+					if not eventDict.get("allday") and eventDict.get("busy") and now <= eventDict.get("end"): 
 						events.append(eventDict)
 		sortedEvents = []
 		for event in events:
@@ -57,6 +57,14 @@ def main():
 				sortedEvents.append(event)
 		if len(sortedEvents) > 0:
 			sortedEvents.sort(key=startFilter)
+			if len(sortedEvents) > 1:
+				futureEvents = []
+				for event in sortedEvents:
+					relativeStart = (event.get("start") - now).total_seconds()/60.0
+					if (relativeStart > -15):
+						futureEvents.append(event)
+				if len(futureEvents) > 0:
+					sortedEvents = futureEvents
 			output.update({"event": sortedEvents[0]})
 
 		print("done")
@@ -72,6 +80,9 @@ def process_event(event, color):
 	summary = event.decoded("summary").decode()
 	start = event.decoded("dtstart")
 	end = event.decoded("dtend")
+	busy = True
+	if (event.decoded("transp").decode() == "TRANSPARENT"):
+		busy = False
 	try:
 		allday = False
 		start.time()
@@ -82,6 +93,7 @@ def process_event(event, color):
 		"start": start,
 		"end": end,
 		"allday": allday,
+		"busy": busy,
 		"color": color
 	}
 
