@@ -31,17 +31,6 @@ def main():
 
 		output = {"timezone": timezone}
 
-		specials = []
-		specialCalendar = config.get("special")
-		for event in process_calendar(specialCalendar.get("url"), today, endDate):
-			if not check_declined(event, username):
-				eventDict = process_event(event, specialCalendar.get("color"))
-				if eventDict.get("allday") and today >= eventDict.get("start") and today <= eventDict.get("end"):
-					specials.append(eventDict)
-		if len(specials) > 0:
-			specials.sort(key=startFilter)
-			output.update({"special": specials[0]})
-
 		events = []
 		calendars = config.get("calendars")
 		for calendar in calendars:

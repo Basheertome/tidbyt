@@ -15,7 +15,7 @@ def main(config):
 	url = config.get("serverURL") or "http://127.0.0.1:5000"
 	if url:
 		data = get_data(url)
-		children = render_events(data.get("special"), data.get("event"), data.get("timezone"))
+		children = render_events(data.get("event"), data.get("timezone"))
 	
 	if children:
 		return render.Root(
@@ -27,55 +27,23 @@ def main(config):
 	else:
 		return [] # Hide app if nothing to show
 
-def render_events(special, event, timezone):
+def render_events(event, timezone):
 	output = []
-	if special:
-		color = special.get("color")
-		summary = special.get("summary")
-		if summary.rfind("Fellow") >= 0:
-			color = "#0000FF"
-		elif summary.rfind("Ghost") >= 0:
-			color = "#00FF00"
-		elif summary.rfind("Walnut") >= 0:
-			color = "#FF0000"
-		pages = []
-		for word in split_summary(summary):
-			pages.append(
-				render.Padding(
-					pad = (0, 1, 0, 2),
-					child = render.Row(
-					    main_align = "center",
-					    cross_align = "center",
-					    expanded = True,
-					    children = [render.Text(
-					    	content = "∗ " + word + " ∗",
-					    	font = "6x13",
-					    	color = color,
-					    ),]
-					)
-				)
-			)
+	if event:
 		output.append(
-			render.Animation(
-				children = pages
+			render.Padding(
+				pad = (0, 1, 0, 2),
+				child = render.Row(
+				    main_align = "center",
+				    cross_align = "center",
+				    expanded = True,
+				    children = [render.Text(
+				    	content = humanize.time_format("HH:mm", time.now()),
+				    	font = "6x13",
+				    ),]
+				)
 			)
 		)
-	if event:
-		if not special:
-			output.append(
-				render.Padding(
-					pad = (0, 1, 0, 2),
-					child = render.Row(
-					    main_align = "center",
-					    cross_align = "center",
-					    expanded = True,
-					    children = [render.Text(
-					    	content = humanize.time_format("HH:mm", time.now()),
-					    	font = "6x13",
-					    ),]
-					)
-				)
-			)
 		pages = []
 		for word in joined_summary(event.get("summary")):
 			pages.append(
