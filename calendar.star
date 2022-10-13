@@ -90,6 +90,23 @@ def render_events(event, timezone):
 		    	]
 		    )
 		)
+	else:
+		output.append(
+			render.Column(
+				main_align = "center",
+				cross_align = "center",
+				expanded = True,
+				children = [render.Row(
+				    main_align = "center",
+				    cross_align = "center",
+				    expanded = True,
+				    children = [render.Text(
+				    	content = humanize.time_format("HH:mm", time.now()),
+				    	font = "6x13",
+				    ),]
+				),]
+			)
+		)
 	return output
 
 def joined_summary(summary):
