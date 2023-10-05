@@ -1,13 +1,23 @@
+from __future__ import print_function
+
 import sys
 import math
 import json
 from datetime import date, datetime, timezone, timedelta
-import icalendar
-import recurring_ical_events
-import urllib.request
+
+import os.path
+
 from flask import Flask, jsonify, request
 
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
 app = Flask("Calendar Server")
+
+SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 @app.route("/", methods=["GET"])
 def main():
@@ -21,24 +31,22 @@ def main():
 		config = json.load(file)
 		file.close()
 	try:
-		username = config.get("username")
 		timezone = config.get("timezone")
-
 		threshold = float(config.get("threshold"))
-		today = date.today()
+
 		now = datetime.now().astimezone()
-		endDate = date.today() + timedelta(days = math.ceil(threshold/24.0 + 1))
 
 		output = {"timezone": timezone}
 
 		events = []
 		calendars = config.get("calendars")
 		for calendar in calendars:
-			for event in process_calendar(calendar.get("url"), today, endDate):
-				if not check_declined(event, username):
+			for event in process_calendar(calendar, threshold):
+				if not check_declined(event):
 					eventDict = process_event(event, calendar.get("color"))
-					if not eventDict.get("allday") and eventDict.get("busy") and now <= eventDict.get("end"): 
+					if not eventDict.get("allday") and eventDict.get("busy") and now <= eventDict.get("end"):
 						events.append(eventDict)
+
 		sortedEvents = []
 		for event in events:
 			relativeStart = (event.get("start") - now).total_seconds()/3600.0
@@ -66,17 +74,24 @@ def startFilter(event):
 	return event.get("start")
 
 def process_event(event, color):
-	summary = event.decoded("summary").decode()
-	start = event.decoded("dtstart")
-	end = event.decoded("dtend")
+	summary = event.get("summary")
+	start = event.get("start")
+	end = event.get("end")
 	busy = True
-	if (event.decoded("transp").decode() == "TRANSPARENT"):
+	if (event.get("transparency") == "transparent"):
 		busy = False
-	try:
-		allday = False
-		start.time()
-	except:
+	if "date" in start:
 		allday = True
+		start = datetime.strptime(start.get("date"), "%Y-%m-%d")
+		end = datetime.strptime(end.get("date"), "%Y-%m-%d")
+	else:
+		start = datetime.fromisoformat(start.get("dateTime")).astimezone()
+		end = datetime.fromisoformat(end.get("dateTime")).astimezone()
+		if ((end - start).days > 0):
+			allday = True
+		else:
+			allday = False
+
 	return {
 		"summary": summary,
 		"start": start,
@@ -86,31 +101,50 @@ def process_event(event, color):
 		"color": color
 	}
 
-def check_participant(attendee, username):
+def check_declined(event):
 	declined = False
-	if username[1][1:-1] in attendee and attendee.params["partstat"] == "DECLINED":
-		declined = True
-	return declined
-
-def check_declined(event, username):
 	try:
-		attendees = event.get("attendee")
-		try:
-			if len(attendees[0]) > 1:
-				for attendee in attendees:
-					declined = check_participant(attendee, username)
-			else:
-				declined = check_participant(attendees, username)
-		except:
-			declined = False
+		attendees = event.get("attendees")
+		for attendee in attendees:
+			if attendee.get("self") and attendee.get("responseStatus") == 'declined':
+				declined = True
 	except:
 		declined = False
 	return declined
 
-def process_calendar(url, start, end):
-	ical_string = urllib.request.urlopen(url).read()
-	calendar = icalendar.Calendar.from_ical(ical_string)
-	events = recurring_ical_events.of(calendar).between(start, end)
+def process_calendar(calendar, threshold):
+	calendar_name = calendar.get("name")
+	calid = calendar.get("id")
+	token_file = calendar_name + '_creds.json'
+
+	creds = None
+
+	if os.path.exists(token_file):
+	    creds = Credentials.from_authorized_user_file(token_file, SCOPES)
+
+	if not creds or not creds.valid:
+	    print("Going to ask for permissions for your " + calendar_name + "calendar...")
+	    if creds and creds.expired and creds.refresh_token:
+	        creds.refresh(Request())
+	    else:
+	        flow = InstalledAppFlow.from_client_secrets_file(
+	            'credentials.json', SCOPES)
+	        creds = flow.run_local_server(port=0)
+	    with open(token_file, 'w') as token:
+	        token.write(creds.to_json())
+	
+	try:
+	    service = build('calendar', 'v3', credentials=creds)
+	    time_min = (datetime.utcnow() - timedelta(hours=threshold)).isoformat() + 'Z'
+	    time_max = (datetime.utcnow() + timedelta(hours=threshold)).isoformat() + 'Z'
+	    events_result = service.events().list(calendarId=calid, timeMin=time_min, timeMax=time_max,
+	                                          maxResults=10, singleEvents=True,
+	                                          orderBy='startTime').execute()
+	    events = events_result.get('items', [])
+	
+	except HttpError as error:
+	    print('An error occurred: %s' % error)
+	
 	return events
 
 @app.errorhandler(404)

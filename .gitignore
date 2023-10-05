@@ -11,3 +11,5 @@ __pycache__
 calendar.webp
 config.json
 render-push.sh
+credentials.json
+*_creds.json

@@ -7,24 +7,22 @@ The server file runs using a separate configuation file (stored one level above 
 
 ```
 {
-	"username": "basheer",
 	"threshold": 24,
 	"timezone": "America/Los_Angeles",
-	"special": {
-		"url": "https://example.com/calendar0.ics",
-		"color": "#0000FF"
-	},
 	"calendars": [
 		{
-			"url": "https://example.com/calendar1.ics",
+			"name": "string",
+			"id": "look up in Google Calendar",
 			"color": "#FF0000"
 		},
 		{
-			"url": "https://example.com/calendar2.ics",
+			"name": "string",
+			"id": "look up in Google Calendar",
 			"color": "#FFFF00"
 		},
 		{
-			"url": "https://example.com/calendar3.ics",
+			"name": "string",
+			"id": "look up in Google Calendar",
 			"color": "#00FF00"
 		}
 	]
