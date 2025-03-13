@@ -138,7 +138,7 @@ def process_calendar(calendar, threshold):
 	    time_min = (datetime.utcnow() - timedelta(hours=threshold)).isoformat() + 'Z'
 	    time_max = (datetime.utcnow() + timedelta(hours=threshold)).isoformat() + 'Z'
 	    events_result = service.events().list(calendarId=calid, timeMin=time_min, timeMax=time_max,
-	                                          maxResults=10, singleEvents=True,
+	                                          maxResults=20, singleEvents=True,
 	                                          orderBy='startTime').execute()
 	    events = events_result.get('items', [])
 	
