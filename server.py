@@ -68,7 +68,7 @@ def main():
 		return jsonify(output)
 	except Exception as e:
 		print(e)
-		return jsonify({"error": e})
+		return jsonify({"error": str(e)})
 
 def startFilter(event):
 	return event.get("start")
@@ -115,7 +115,9 @@ def check_declined(event):
 def process_calendar(calendar, threshold):
 	calendar_name = calendar.get("name")
 	calid = calendar.get("id")
-	token_file = calendar_name + '_creds.json'
+	token_file = "../" + calendar_name + '_creds.json'
+	token_file = os.path.join(os.path.dirname(__file__), token_file)
+	print(token_file)
 
 	creds = None
 
@@ -123,13 +125,13 @@ def process_calendar(calendar, threshold):
 	    creds = Credentials.from_authorized_user_file(token_file, SCOPES)
 
 	if not creds or not creds.valid:
-	    print("Going to ask for permissions for your " + calendar_name + "calendar...")
+	    print("Going to ask for permissions for your " + calendar_name + " calendar...")
 	    if creds and creds.expired and creds.refresh_token:
 	        creds.refresh(Request())
 	    else:
 	        flow = InstalledAppFlow.from_client_secrets_file(
-	            'credentials.json', SCOPES)
-	        creds = flow.run_local_server(port=0)
+    os.path.join(os.path.dirname(__file__), '../credentials.json'), SCOPES)
+	        creds = flow.run_local_server(port=0, open_browser=False)
 	    with open(token_file, 'w') as token:
 	        token.write(creds.to_json())
 	
